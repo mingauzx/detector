@@ -21,7 +21,7 @@
 </div>
 <div class="controls">
 <button id="startCamera" class="btn primary">Abrir câmera</button>
-<label class="btn upload" for="photo">Enviar foto<input id="photo" type="file" accept="image/*"></label>
+<label class="btn upload" for="photo">Enviar foto<input id="photo" type="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp,.avif,.heic,.heif"></label>
 <button id="switchCamera" class="btn" disabled>Trocar câmera</button>
 <button id="stopCamera" class="btn" disabled>Desligar</button>
 </div>
@@ -37,6 +37,7 @@
 </div>
 </aside>
 </section>
+<p class="smallnote">Fotos de até 20 MB. JPG, JFIF, PNG e WebP; outros formatos dependem do navegador. Se HEIC não abrir, converta para JPG.</p>
 <div id="notice" class="notice" role="status">Comece abrindo a câmera ou enviando uma foto.</div>
 <p class="legend"><span class="green-dot" aria-hidden="true"></span> Com tampa = verde <span class="red-dot" aria-hidden="true"></span> Sem tampa = vermelho</p>
 <details class="setup" id="treino">
@@ -50,7 +51,7 @@
 </div>
 <div class="controls">
 <button class="btn primary" id="addSample" disabled>Capturar exemplo</button>
-<label class="btn upload" for="sampleFiles">Usar fotos<input id="sampleFiles" type="file" accept="image/*" multiple></label>
+<label class="btn upload" for="sampleFiles">Usar fotos<input id="sampleFiles" type="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp,.avif,.heic,.heif" multiple></label>
 <button class="btn" id="undoSample" disabled>Desfazer</button>
 </div>
 <div class="model-tools"><span id="sampleTotal">0 exemplos no total</span><span id="modelStatus" role="status">IA ainda não carregada</span></div>
@@ -68,6 +69,6 @@
 <footer>VisionCheck · Projeto escolar</footer>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js" defer></script>
-<script src="classifier-core.js" defer></script><script src="app.js?v=simples-2" defer></script>
+<script src="classifier-core.js" defer></script><script src="app.js?v=upload-3" defer></script>
 </body>
 </html>
