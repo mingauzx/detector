@@ -23,6 +23,12 @@ function addExample(data,label,vector){
 function classify(data,vector){
  if(!ready(data))throw Error('Capture pelo menos 3 exemplos de cada classe antes de analisar.');
  const query=normalize(vector),ordered=CLASSES.flatMap(label=>data[label].map(v=>({label,similarity:dot(v,query)}))).sort((a,b)=>b.similarity-a.similarity),neighborCount=Math.min(5,...CLASSES.map(label=>data[label].length)),neighbors=ordered.slice(0,neighborCount);
+ // An identical feature vector is an already-known example, not a majority vote.
+ const exact=ordered.filter(item=>item.similarity>1-1e-7);
+ if(exact.length&&exact.every(item=>item.label===exact[0].label)){
+  const label=exact[0].label,scores=Object.fromEntries(CLASSES.map(c=>[c,c===label?1:0]));
+  return {label,scores,agreement:1,similarity:ordered[0].similarity,neighborCount:1,knownExample:true};
+ }
  const counts=Object.fromEntries(CLASSES.map(c=>[c,0]));
  for(const item of neighbors)counts[item.label]++;
  const scores=Object.fromEntries(CLASSES.map(c=>[c,counts[c]/neighbors.length]));
