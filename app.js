@@ -84,10 +84,24 @@ async function startCamera(){
  finally{update();}
 }
 async function imageFromFile(file){
- if(!file||file.size>12*1024*1024)throw Error('Use uma imagem de até 12 MB.');
- if(!file.type.startsWith('image/'))throw Error('Escolha um arquivo de imagem.');
+ if(!file)throw Error('Selecione uma imagem.');
+ const name=file.name||'Imagem',extension=name.split('.').pop().toLowerCase();
+ if(!file.size)throw Error(name+': o arquivo está vazio. Baixe a foto no celular antes de enviar.');
+ if(file.size>20*1024*1024)throw Error(name+': use uma imagem de até 20 MB.');
+ const known=/^(jpe?g|jfif|png|webp|gif|bmp|avif|heic|heif)$/i.test(extension);
+ if(file.type&&!file.type.startsWith('image/')&&!known)throw Error(name+': escolha um arquivo de imagem.');
  const url=URL.createObjectURL(file),img=new Image();
- try{await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('Não consegui abrir a imagem. Tente JPG, PNG ou WebP.'));img.src=url;});if(img.naturalWidth*img.naturalHeight>24000000)throw Error('A imagem é grande demais. Reduza a resolução antes de enviar.');return img;}finally{URL.revokeObjectURL(url);}
+ try{
+  await new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>{img.onload=img.onerror=null;reject(Error(name+': a leitura demorou demais. Tente uma cópia menor em JPG.'));},15000);
+   img.onload=()=>{clearTimeout(timer);resolve();};
+   img.onerror=()=>{clearTimeout(timer);reject(Error(name+': '+(/^(heic|heif)$/.test(extension)?'este navegador não abriu HEIC/HEIF. Converta para JPG ou PNG.':'formato não reconhecido ou arquivo danificado. Tente JPG, PNG ou WebP.')));};
+   img.src=url;
+  });
+  if(!img.naturalWidth||!img.naturalHeight)throw Error(name+': a imagem não tem dimensões válidas.');
+  if(img.naturalWidth*img.naturalHeight>50000000)throw Error(name+': resolução acima de 50 megapixels. Envie uma versão menor.');
+  return img;
+ }finally{img.onload=img.onerror=null;URL.revokeObjectURL(url);}
 }
 function showPhoto(img){
  clearResult();stopCamera({announce:false});draw(img,img.naturalWidth,img.naturalHeight);hasPhoto=true;canvas.hidden=false;video.hidden=true;$('placeholder').hidden=true;$('sourceStatus').textContent='Foto carregada';update();
@@ -105,20 +119,20 @@ function renderHistory(){
 $('startCamera').addEventListener('click',startCamera);
 $('stopCamera').addEventListener('click',()=>stopCamera());
 $('switchCamera').addEventListener('click',async()=>{stopCamera({announce:false});facing=facing==='environment'?'user':'environment';await startCamera();});
-$('photo').addEventListener('change',event=>void exclusive(async()=>{const file=event.target.files[0];if(!file)return;showPhoto(await imageFromFile(file));notice('Foto pronta. Você pode adicioná-la como exemplo ou analisar após preparar as três classes.');event.target.value='';}));
+$('photo').addEventListener('change',event=>void exclusive(async()=>{const file=event.target.files[0];event.target.value='';if(!file)return;notice('Abrindo a imagem…');showPhoto(await imageFromFile(file));notice(core.ready(data)?'Foto pronta. Clique em Analisar imagem.':'Foto carregada. Para analisar, adicione 3 exemplos diferentes de cada situação em Preparar o detector.');}));
 $('addSample').addEventListener('click',()=>void exclusive(async()=>{
  const label=selected();captureSource();core.addExample(data,label,await embedding());undo.push(label);clearResult();notice('Exemplo adicionado em “'+labels[label]+'”. Varie posição e iluminação para a próxima captura.');
 }));
 $('sampleFiles').addEventListener('change',event=>void exclusive(async()=>{
  const files=[...event.target.files],label=selected();event.target.value='';if(!files.length)return;
  if(data[label].length+files.length>core.MAX_SAMPLES)throw Error('Cada classe aceita até 60 imagens.');
- await loadModel();let added=0,skipped=0;
+ let added=0;const failures=[];
  for(const file of files){
   try{const img=await imageFromFile(file);showPhoto(img);core.addExample(data,label,await embedding());undo.push(label);added++;}
-  catch(error){skipped++;notice(error.message,true);}
-  update();await tf.nextFrame();
+  catch(error){failures.push(error.message||file.name+': não foi possível adicionar.');}
+  update();await new Promise(resolve=>requestAnimationFrame(resolve));
  }
- clearResult();notice(added+' exemplo(s) adicionado(s) em “'+labels[label]+'”.'+(skipped?' '+skipped+' arquivo(s) não adicionado(s); confira formato, tamanho ou imagens repetidas.':''));
+ clearResult();notice(added+' exemplo(s) adicionado(s) em “'+labels[label]+'”.'+(failures.length?' Falhas: '+failures.join(' | '):''),failures.length>0);
 }));
 $('undoSample').addEventListener('click',()=>{if(busy)return;const label=undo.pop();if(label)data[label].pop();clearResult();update();notice('Última amostra removida.');});
 $('analyze').addEventListener('click',()=>void exclusive(async()=>{
