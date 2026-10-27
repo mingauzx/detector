@@ -161,28 +161,69 @@ window.addEventListener('pagehide',()=>stopCamera({announce:false}));
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&stream)stopCamera();});
 
 const starterPhotos={capped:['t1','t2','t3'],uncapped:['st1','st2','st3'],empty:['sc1','sc2','sc3']};
+const starterVideos={capped:'vt1.mp4',uncapped:'vst2.mp4',empty:'vsc3.mp4'};
+const trainingCacheKey='visioncheck-video-examples-v1';
+function waitForMedia(media,event,action){
+ return new Promise((resolve,reject)=>{
+  const timer=setTimeout(()=>finish(Error('O vídeo demorou para carregar. Confira a conexão e tente novamente.')),25000);
+  function finish(error){clearTimeout(timer);media.removeEventListener(event,done);media.removeEventListener('error',failed);error?reject(error):resolve();}
+  function done(){finish();}
+  function failed(){finish(Error('Este navegador não conseguiu ler o vídeo MP4. Tente outro navegador ou use fotos.'));}
+  media.addEventListener(event,done,{once:true});media.addEventListener('error',failed,{once:true});
+  try{action();}catch(error){finish(error);}
+ });
+}
+async function examplesFromVideo(next,label){
+ const clip=document.createElement('video');clip.muted=true;clip.playsInline=true;clip.preload='auto';
+ let added=0;
+ try{
+  await waitForMedia(clip,'loadeddata',()=>{clip.src='videos/'+starterVideos[label];clip.load();});
+  if(!Number.isFinite(clip.duration)||clip.duration<=0||!clip.videoWidth)throw Error('Vídeo sem duração ou imagem válida: '+starterVideos[label]);
+  for(let i=0;i<20;i++){
+   const time=clip.duration*(.1+.8*(i+.5)/20);
+   await waitForMedia(clip,'seeked',()=>{clip.currentTime=time;});
+   draw(clip,clip.videoWidth,clip.videoHeight);
+   const vector=await embedding();
+   // Skip duplicate frames, without masking extraction or model failures.
+   const normalized=core.normalize(vector);
+   const duplicate=core.CLASSES.some(c=>next[c].some(v=>v.reduce((sum,n,j)=>sum+n*normalized[j],0)>.999999));
+   if(!duplicate){core.addExample(next,label,vector);added++;}
+   notice('Preparando '+labels[label]+': quadro '+(i+1)+' / 20. Na primeira vez pode demorar.');
+   await new Promise(resolve=>requestAnimationFrame(resolve));
+  }
+  return added;
+ }finally{clip.pause();clip.removeAttribute('src');clip.load();}
+}
 async function prepareDefaultExamples(){
- const next=core.createDataset();let completed=0;
+ const next=core.createDataset();let completed=0;const failures=[];
  $('resultText').textContent='Carregando os exemplos do projeto…';
  try{
   await loadModel();
+  try{
+   const cached=localStorage.getItem(trainingCacheKey);
+   if(cached){const saved=core.deserialize(cached);if(core.ready(saved)){data=saved;undo=[];clearResult();notice('Detector pronto com exemplos dos vídeos salvos neste navegador. Teste com uma imagem nova.');return;}}
+  }catch{/* Cache is optional; rebuild from source if unavailable or invalid. */}
   for(const label of core.CLASSES){
+   try{completed+=await examplesFromVideo(next,label);}
+   catch(error){failures.push(labels[label]+': '+error.message);}
    for(const name of starterPhotos[label]){
-    notice('Preparando detector: '+completed+' / 9 fotos. Aguarde…');
+    notice('Carregando fotos complementares: '+name+'.jpg…');
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
-    let response,blob;
-    try{response=await fetch('fotos/'+name+'.jpg',{signal:controller.signal});if(!response.ok)throw Error('Não foi possível carregar '+name+'.jpg (HTTP '+response.status+').');blob=await response.blob();}
+    try{
+     const response=await fetch('fotos/'+name+'.jpg',{signal:controller.signal});if(!response.ok)throw Error('HTTP '+response.status);
+     const blob=await response.blob(),img=await imageFromFile(new File([blob],name+'.jpg',{type:blob.type}));
+     draw(img,img.naturalWidth,img.naturalHeight);
+     const vector=await embedding(),normalized=core.normalize(vector);
+     if(!core.CLASSES.some(c=>next[c].some(v=>v.reduce((sum,n,j)=>sum+n*normalized[j],0)>.999999))){core.addExample(next,label,vector);completed++;}
+    }catch(error){failures.push(name+'.jpg: '+error.message);}
     finally{clearTimeout(timer);}
-    const img=await imageFromFile(new File([blob],name+'.jpg',{type:blob.type}));
-    draw(img,img.naturalWidth,img.naturalHeight);
-    core.addExample(next,label,await embedding());
-    completed++;await new Promise(resolve=>requestAnimationFrame(resolve));
+    await new Promise(resolve=>requestAnimationFrame(resolve));
    }
   }
-  if(!core.ready(next))throw Error('Os exemplos ainda não são suficientes.');
+  if(!core.ready(next))throw Error('Não há exemplos válidos suficientes nas três situações. '+failures.join(' | '));
   data=next;undo=[];clearResult();
-  $('trainingStatus').textContent='Exemplos do projeto carregados';
-  notice('Detector pronto com as 9 fotos do projeto. Abra a câmera ou envie uma foto nova e clique em Analisar imagem.');
+  if(!failures.length){try{localStorage.setItem(trainingCacheKey,core.serialize(data));}catch{/* Storage quota or private mode: keep session training. */}}
+  notice('Detector pronto com '+completed+' exemplos ('+core.CLASSES.map(c=>labels[c]+': '+data[c].length).join('; ')+'). Teste com uma foto nova.'+(failures.length?' Avisos: '+failures.join(' | '):''),failures.length>0);
  }catch(error){
   $('resultText').textContent='Não foi possível carregar os exemplos. Tente novamente ou use a preparação manual.';
   throw Error('Preparação automática falhou: '+error.message);
@@ -191,7 +232,7 @@ async function prepareDefaultExamples(){
   $('placeholder').hidden=false;$('sourceStatus').textContent='Escolha câmera ou foto';
  }
 }
-$('reloadExamples').addEventListener('click',()=>void exclusive(prepareDefaultExamples));
+$('reloadExamples').addEventListener('click',()=>void exclusive(async()=>{try{localStorage.removeItem(trainingCacheKey);}catch{}await prepareDefaultExamples();}));
 
 update();
 void exclusive(prepareDefaultExamples);
