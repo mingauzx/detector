@@ -9,3 +9,10 @@ test('não conta a mesma imagem repetida para completar o treino',()=>{const d=c
 test('exporta e importa preservando classes e previsões',()=>{const d=trained(),copy=c.deserialize(c.serialize(d));assert.deepEqual(copy.capped.length,d.capped.length);assert.equal(c.classify(copy,vector(2,9)).label,'empty');});
 test('rejeita treinamento incompatível, vetor inválido e excesso de amostras',()=>{assert.throws(()=>c.normalize([0,0]));assert.throws(()=>c.normalize([NaN,1]));assert.throws(()=>c.deserialize('{"version":2}'));const value=JSON.parse(c.serialize(trained()));value.samples.empty[0]=Array(129).fill(1);assert.throws(()=>c.deserialize(JSON.stringify(value)));value.samples.empty=Array(61).fill(vector(2));assert.throws(()=>c.deserialize(JSON.stringify(value)));});
 test('limita crescimento do treinamento',()=>{const d=c.createDataset();for(let i=0;i<60;i++){const v=Array(128).fill(0);v[0]=1;v[10+i]=.2;c.addExample(d,'capped',v);}assert.throws(()=>c.addExample(d,'capped',vector(1)));});
+
+test('mínimo reduzido exige três amostras de cada classe',()=>{
+ const d=c.createDataset();for(let k=0;k<3;k++)for(let i=0;i<2;i++)c.addExample(d,c.CLASSES[k],vector(k,i));
+ assert.equal(c.ready(d),false);
+ for(let k=0;k<3;k++)c.addExample(d,c.CLASSES[k],vector(k,2));
+ assert.equal(c.MIN_SAMPLES,3);assert.equal(c.ready(d),true);
+});

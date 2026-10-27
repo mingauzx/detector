@@ -9,7 +9,7 @@ Os scripts de TensorFlow.js 4.22.0, MobileNet 2.1.1 e os pesos do modelo são ba
 ## Testar no celular
 1. Abra em Chrome/Android ou Safari/iOS atualizado, por HTTPS.
 2. Abra a câmera e permita acesso. Se não funcionar, envie imagens.
-3. Selecione a classe correta e capture ao menos 8 imagens diferentes por classe (recomendado 20 ou mais, variando luz, enquadramento e fundo).
+3. Selecione a classe correta e capture ao menos 3 imagens diferentes por classe (recomendado 20 ou mais, variando luz, enquadramento e fundo).
 4. A tampa precisa cobrir a ponta. Tampa ao lado ou no fundo da caneta conta como sem tampa.
 5. Analise imagens NOVAS, fora do treinamento; registre erros.
 6. Exporte o treinamento em JSON para conservar as características numéricas; importe depois ou em outro celular.

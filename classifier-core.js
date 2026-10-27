@@ -2,7 +2,7 @@
 'use strict';
 const CLASSES=['capped','uncapped','empty'];
 const MODEL_ID='mobilenet-v2-alpha050-embedding-v1';
-const MIN_SAMPLES=8,MAX_SAMPLES=60;
+const MIN_SAMPLES=3,MAX_SAMPLES=60;
 function normalize(vector){
  if(!Array.isArray(vector)&&!(vector instanceof Float32Array))throw Error('Vetor inválido.');
  if(vector.length<2||vector.length>2048||[...vector].some(n=>typeof n!=='number'||!Number.isFinite(n)))throw Error('Características inválidas.');
@@ -21,7 +21,7 @@ function addExample(data,label,vector){
  data[label].push(value);return value;
 }
 function classify(data,vector){
- if(!ready(data))throw Error('Capture pelo menos 8 exemplos de cada classe antes de analisar.');
+ if(!ready(data))throw Error('Capture pelo menos 3 exemplos de cada classe antes de analisar.');
  const query=normalize(vector),ordered=CLASSES.flatMap(label=>data[label].map(v=>({label,similarity:dot(v,query)}))).sort((a,b)=>b.similarity-a.similarity),neighbors=ordered.slice(0,5);
  const counts=Object.fromEntries(CLASSES.map(c=>[c,0]));
  for(const item of neighbors)counts[item.label]++;

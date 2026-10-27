@@ -9,7 +9,7 @@ function sourceReady(){return (!!stream&&video.readyState>=2&&video.videoWidth>0
 function update(){
  let samples=0,classes=0;
  for(const label of core.CLASSES){const count=data[label].length;samples+=count;if(count>=core.MIN_SAMPLES)classes++;const el=$('count-'+label);el.textContent=count+' / '+core.MIN_SAMPLES+' exemplos';el.classList.toggle('ready',count>=core.MIN_SAMPLES);}
- $('trainingStatus').textContent=classes+' / 3 classes prontas'+(classes===3?' · compare com imagens novas':' · mínimo de 8 exemplos por classe');
+ $('trainingStatus').textContent=classes+' / 3 classes prontas'+(classes===3?' · compare com imagens novas':' · mínimo de 3 exemplos por classe');
  $('sampleTotal').textContent=samples+' exemplos no total';
  $('analyze').disabled=busy||!sourceReady()||!core.ready(data);
  $('addSample').disabled=busy||!sourceReady();
