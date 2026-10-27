@@ -18,3 +18,5 @@ test('mínimo reduzido exige três amostras de cada classe',()=>{
 });
 
 test('classifica com somente três exemplos por classe',()=>{const d=c.createDataset();for(let k=0;k<3;k++)for(let i=0;i<3;i++)c.addExample(d,c.CLASSES[k],vector(k,i));for(let k=0;k<3;k++){const result=c.classify(d,vector(k,9));assert.equal(result.label,c.CLASSES[k]);assert.equal(result.neighborCount,3);}});
+
+test('foto conhecida sem tampa não perde para votos de outras classes',()=>{const d=c.createDataset(),q=Array(128).fill(0);q[0]=1;for(let k=0;k<3;k++)for(let i=0;i<3;i++){const v=Array(128).fill(0);v[0]=1;v[10+k*3+i]=(k===1&&i===0)?0:(k===1?.8:.1);c.addExample(d,c.CLASSES[k],v);}const result=c.classify(d,q);assert.equal(result.label,'uncapped');assert.equal(result.scores.uncapped,1);assert.equal(result.knownExample,true);});
