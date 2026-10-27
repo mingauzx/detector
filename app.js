@@ -7,6 +7,7 @@ const video=$('video'),canvas=$('capture'),ctx=canvas.getContext('2d',{willReadF
 function notice(text,error=false){$('notice').textContent=text;$('notice').classList.toggle('error',error);}
 function sourceReady(){return (!!stream&&video.readyState>=2&&video.videoWidth>0)||hasPhoto;}
 function update(){
+ $('framingGuide').hidden=!stream||video.hidden||!$('showGuide').checked;
  let samples=0,classes=0;
  for(const label of core.CLASSES){const count=data[label].length;samples+=count;if(count>=core.MIN_SAMPLES)classes++;const el=$('count-'+label);el.textContent=count+' / '+core.MIN_SAMPLES+' exemplos';el.classList.toggle('ready',count>=core.MIN_SAMPLES);}
  $('trainingStatus').textContent=classes+' / 3 classes prontas'+(classes===3?' · compare com imagens novas':' · mínimo de 3 exemplos por classe');
@@ -116,6 +117,7 @@ function renderHistory(){
  if(!history.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=4;td.textContent='Nenhuma análise realizada.';tr.append(td);body.append(tr);return;}
  for(const entry of history){const tr=document.createElement('tr');tr.dataset.state=entry.label;for(const value of [entry.time,labels[entry.label],Math.round(entry.agreement*100)+'% dos '+entry.neighborCount+' vizinhos',entry.elapsed+' ms']){const td=document.createElement('td');td.textContent=value;tr.append(td);}body.append(tr);}
 }
+$('showGuide').addEventListener('change',update);
 $('startCamera').addEventListener('click',startCamera);
 $('stopCamera').addEventListener('click',()=>stopCamera());
 $('switchCamera').addEventListener('click',async()=>{stopCamera({announce:false});facing=facing==='environment'?'user':'environment';await startCamera();});
