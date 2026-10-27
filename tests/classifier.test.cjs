@@ -1,0 +1,11 @@
+const test=require('node:test');const assert=require('node:assert/strict');const c=require('../classifier-core');
+const vector=(axis,i=0)=>{const a=Array(128).fill(0);a[axis]=1;a[10+i]=.1;return a;};
+const trained=()=>{const d=c.createDataset();for(let k=0;k<3;k++)for(let i=0;i<8;i++)c.addExample(d,c.CLASSES[k],vector(k,i));return d;};
+test('não analisa antes de todas as classes terem amostras',()=>{const d=c.createDataset();c.addExample(d,'capped',vector(0));assert.equal(c.ready(d),false);assert.throws(()=>c.classify(d,vector(0)));});
+test('classifica exemplos próximos nas três classes',()=>{const d=trained();assert.equal(c.ready(d),true);for(let k=0;k<3;k++)assert.equal(c.classify(d,vector(k,9)).label,c.CLASSES[k]);});
+test('imagem distante dos exemplos fica inconclusiva',()=>{const q=Array(128).fill(0);q[127]=1;assert.equal(c.classify(trained(),q).label,'uncertain');});
+test('votos divididos entre classes ficam inconclusivos',()=>{const q=Array(128).fill(0);q[0]=q[1]=1;assert.equal(c.classify(trained(),q).label,'uncertain');});
+test('não conta a mesma imagem repetida para completar o treino',()=>{const d=c.createDataset();c.addExample(d,'capped',vector(0));assert.throws(()=>c.addExample(d,'capped',vector(0)));assert.throws(()=>c.addExample(d,'uncapped',vector(0)));assert.equal(d.uncapped.length,0);});
+test('exporta e importa preservando classes e previsões',()=>{const d=trained(),copy=c.deserialize(c.serialize(d));assert.deepEqual(copy.capped.length,d.capped.length);assert.equal(c.classify(copy,vector(2,9)).label,'empty');});
+test('rejeita treinamento incompatível, vetor inválido e excesso de amostras',()=>{assert.throws(()=>c.normalize([0,0]));assert.throws(()=>c.normalize([NaN,1]));assert.throws(()=>c.deserialize('{"version":2}'));const value=JSON.parse(c.serialize(trained()));value.samples.empty[0]=Array(129).fill(1);assert.throws(()=>c.deserialize(JSON.stringify(value)));value.samples.empty=Array(61).fill(vector(2));assert.throws(()=>c.deserialize(JSON.stringify(value)));});
+test('limita crescimento do treinamento',()=>{const d=c.createDataset();for(let i=0;i<60;i++){const v=Array(128).fill(0);v[0]=1;v[10+i]=.2;c.addExample(d,'capped',v);}assert.throws(()=>c.addExample(d,'capped',vector(1)));});
