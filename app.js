@@ -114,7 +114,7 @@ function selected(){return document.querySelector('input[name="class"]:checked')
 function renderHistory(){
  const body=$('history');body.replaceChildren();
  if(!history.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=4;td.textContent='Nenhuma análise realizada.';tr.append(td);body.append(tr);return;}
- for(const entry of history){const tr=document.createElement('tr');tr.dataset.state=entry.label;for(const value of [entry.time,labels[entry.label],Math.round(entry.agreement*100)+'% dos 5 vizinhos',entry.elapsed+' ms']){const td=document.createElement('td');td.textContent=value;tr.append(td);}body.append(tr);}
+ for(const entry of history){const tr=document.createElement('tr');tr.dataset.state=entry.label;for(const value of [entry.time,labels[entry.label],Math.round(entry.agreement*100)+'% dos '+entry.neighborCount+' vizinhos',entry.elapsed+' ms']){const td=document.createElement('td');td.textContent=value;tr.append(td);}body.append(tr);}
 }
 $('startCamera').addEventListener('click',startCamera);
 $('stopCamera').addEventListener('click',()=>stopCamera());
@@ -143,8 +143,8 @@ $('analyze').addEventListener('click',()=>void exclusive(async()=>{
  $('resultText').textContent={capped:'Normal: a caneta parece estar com a tampa.',uncapped:'Atenção: a caneta parece estar sem a tampa.',empty:'A imagem parece não ter uma caneta.',uncertain:'Tente outra posição ou melhore os exemplos.'}[result.label];
  const scores=$('scores');scores.replaceChildren();scores.hidden=false;
  for(const label of core.CLASSES){const row=document.createElement('div');row.className='score-row';const line=document.createElement('div');line.className='score-label';const name=document.createElement('span'),value=document.createElement('span');name.textContent=labels[label];value.textContent=Math.round(result.scores[label]*100)+'%';line.append(name,value);const bar=document.createElement('div');bar.className='score-bar';const fill=document.createElement('span');fill.style.width=(result.scores[label]*100)+'%';bar.append(fill);row.append(line,bar);scores.append(row);}
- const note=document.createElement('p');note.className='smallnote no-pad';note.textContent='Concordância dos 5 exemplos mais próximos; não é probabilidade de acerto.';scores.append(note);
- history.unshift({time:new Date().toLocaleTimeString('pt-BR'),label:result.label,agreement:result.agreement,elapsed});history=history.slice(0,50);renderHistory();notice('Análise concluída. Valide a hipótese usando uma imagem que não fez parte dos exemplos.');
+ const note=document.createElement('p');note.className='smallnote no-pad';note.textContent='Concordância dos '+result.neighborCount+' exemplos mais próximos; não é probabilidade de acerto.';scores.append(note);
+ history.unshift({time:new Date().toLocaleTimeString('pt-BR'),label:result.label,agreement:result.agreement,neighborCount:result.neighborCount,elapsed});history=history.slice(0,50);renderHistory();notice('Análise concluída. Valide a hipótese usando uma imagem que não fez parte dos exemplos.');
 }));
 $('clearHistory').addEventListener('click',()=>{history=[];total=0;$('analyses').textContent='0';$('elapsed').textContent='—';renderHistory();notice('Registros da sessão apagados. O treinamento foi mantido.');});
 $('clearModel').addEventListener('click',()=>{if(busy||!confirm('Apagar os exemplos de treinamento desta aba? Exporte antes para conservar uma cópia.'))return;data=core.createDataset();undo=[];clearResult();update();notice('Treinamento apagado. Capture novos exemplos.');});
