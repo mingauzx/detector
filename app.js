@@ -15,7 +15,7 @@ function update(){
  $('addSample').disabled=busy||!sourceReady();
  $('undoSample').disabled=busy||!undo.length;
  $('exportModel').disabled=busy||!samples;
- for(const id of ['photo','sampleFiles','importModel','clearModel'])$(id).disabled=busy;
+ for(const id of ['photo','sampleFiles','importModel','clearModel','reloadExamples'])$(id).disabled=busy;
  $('startCamera').disabled=busy||!!stream;
  $('stopCamera').disabled=!stream;
  $('switchCamera').disabled=busy||!stream;
@@ -79,7 +79,7 @@ async function startCamera(){
   if(!video.videoWidth)await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>{video.removeEventListener('loadeddata',ready);reject(Error('Câmera sem imagem.'));},10000);function ready(){clearTimeout(timeout);resolve();}video.addEventListener('loadeddata',ready,{once:true});});
   if(generation!==cameraGeneration)return;
   for(const track of stream.getVideoTracks())track.addEventListener('ended',()=>{if(stream?.getTracks().includes(track))stopCamera();});
-  $('sourceStatus').textContent='Câmera ao vivo';notice('Câmera pronta. Selecione a classe e capture exemplos com posições diferentes.');update();
+  $('sourceStatus').textContent='Câmera ao vivo';notice(core.ready(data)?'Câmera pronta. Mostre o canetão e clique em Analisar imagem.':'Câmera pronta. Carregue os exemplos do projeto ou prepare as três situações.');update();
  }catch(error){acquired?.getTracks().forEach(t=>t.stop());if(generation===cameraGeneration){stopCamera({announce:false});notice(cameraError(error),true);}}
  finally{update();}
 }
@@ -159,5 +159,40 @@ $('importModel').addEventListener('change',event=>void exclusive(async()=>{
 }));
 window.addEventListener('pagehide',()=>stopCamera({announce:false}));
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&stream)stopCamera();});
+
+const starterPhotos={capped:['t1','t2','t3'],uncapped:['st1','st2','st3'],empty:['sc1','sc2','sc3']};
+async function prepareDefaultExamples(){
+ const next=core.createDataset();let completed=0;
+ $('resultText').textContent='Carregando os exemplos do projeto…';
+ try{
+  await loadModel();
+  for(const label of core.CLASSES){
+   for(const name of starterPhotos[label]){
+    notice('Preparando detector: '+completed+' / 9 fotos. Aguarde…');
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
+    let response,blob;
+    try{response=await fetch('fotos/'+name+'.jpg',{signal:controller.signal});if(!response.ok)throw Error('Não foi possível carregar '+name+'.jpg (HTTP '+response.status+').');blob=await response.blob();}
+    finally{clearTimeout(timer);}
+    const img=await imageFromFile(new File([blob],name+'.jpg',{type:blob.type}));
+    draw(img,img.naturalWidth,img.naturalHeight);
+    core.addExample(next,label,await embedding());
+    completed++;await new Promise(resolve=>requestAnimationFrame(resolve));
+   }
+  }
+  if(!core.ready(next))throw Error('Os exemplos ainda não são suficientes.');
+  data=next;undo=[];clearResult();
+  $('trainingStatus').textContent='Exemplos do projeto carregados';
+  notice('Detector pronto com as 9 fotos do projeto. Abra a câmera ou envie uma foto nova e clique em Analisar imagem.');
+ }catch(error){
+  $('resultText').textContent='Não foi possível carregar os exemplos. Tente novamente ou use a preparação manual.';
+  throw Error('Preparação automática falhou: '+error.message);
+ }finally{
+  ctx.clearRect(0,0,canvas.width,canvas.height);hasPhoto=false;canvas.hidden=true;video.hidden=true;
+  $('placeholder').hidden=false;$('sourceStatus').textContent='Escolha câmera ou foto';
+ }
+}
+$('reloadExamples').addEventListener('click',()=>void exclusive(prepareDefaultExamples));
+
 update();
+void exclusive(prepareDefaultExamples);
 })();
