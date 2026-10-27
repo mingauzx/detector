@@ -74,7 +74,7 @@ async function startCamera(){
  try{
   acquired=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing},width:{ideal:640},height:{ideal:480}},audio:false});
   if(generation!==cameraGeneration){acquired.getTracks().forEach(t=>t.stop());return;}
-  stream=acquired;video.srcObject=stream;video.hidden=false;canvas.hidden=true;$('placeholder').hidden=true;
+  clearResult();stream=acquired;video.srcObject=stream;video.hidden=false;canvas.hidden=true;$('placeholder').hidden=true;
   await video.play();
   if(!video.videoWidth)await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>{video.removeEventListener('loadeddata',ready);reject(Error('Câmera sem imagem.'));},10000);function ready(){clearTimeout(timeout);resolve();}video.addEventListener('loadeddata',ready,{once:true});});
   if(generation!==cameraGeneration)return;
@@ -90,16 +90,17 @@ async function imageFromFile(file){
  try{await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('Não consegui abrir a imagem. Tente JPG, PNG ou WebP.'));img.src=url;});if(img.naturalWidth*img.naturalHeight>24000000)throw Error('A imagem é grande demais. Reduza a resolução antes de enviar.');return img;}finally{URL.revokeObjectURL(url);}
 }
 function showPhoto(img){
- stopCamera({announce:false});draw(img,img.naturalWidth,img.naturalHeight);hasPhoto=true;canvas.hidden=false;video.hidden=true;$('placeholder').hidden=true;$('sourceStatus').textContent='Foto carregada';update();
+ clearResult();stopCamera({announce:false});draw(img,img.naturalWidth,img.naturalHeight);hasPhoto=true;canvas.hidden=false;video.hidden=true;$('placeholder').hidden=true;$('sourceStatus').textContent='Foto carregada';update();
 }
 function clearResult(){
- $('resultTitle').textContent='Treinamento atualizado';$('resultText').textContent='Analise uma imagem nova para testar o que foi aprendido.';$('scores').hidden=true;
+ delete document.querySelector('.results').dataset.state;delete document.querySelector('.camera').dataset.state;
+ $('resultIcon').textContent='?';$('resultTitle').textContent='Aguardando análise';$('resultText').textContent='Use uma imagem nova e clique em analisar.';$('scores').hidden=true;
 }
 function selected(){return document.querySelector('input[name="class"]:checked').value;}
 function renderHistory(){
  const body=$('history');body.replaceChildren();
  if(!history.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=4;td.textContent='Nenhuma análise realizada.';tr.append(td);body.append(tr);return;}
- for(const entry of history){const tr=document.createElement('tr');for(const value of [entry.time,labels[entry.label],Math.round(entry.agreement*100)+'% dos 5 vizinhos',entry.elapsed+' ms']){const td=document.createElement('td');td.textContent=value;tr.append(td);}body.append(tr);}
+ for(const entry of history){const tr=document.createElement('tr');tr.dataset.state=entry.label;for(const value of [entry.time,labels[entry.label],Math.round(entry.agreement*100)+'% dos 5 vizinhos',entry.elapsed+' ms']){const td=document.createElement('td');td.textContent=value;tr.append(td);}body.append(tr);}
 }
 $('startCamera').addEventListener('click',startCamera);
 $('stopCamera').addEventListener('click',()=>stopCamera());
@@ -122,9 +123,10 @@ $('sampleFiles').addEventListener('change',event=>void exclusive(async()=>{
 $('undoSample').addEventListener('click',()=>{if(busy)return;const label=undo.pop();if(label)data[label].pop();clearResult();update();notice('Última amostra removida.');});
 $('analyze').addEventListener('click',()=>void exclusive(async()=>{
  await loadModel();captureSource();const started=performance.now(),result=core.classify(data,await embedding()),elapsed=Math.round(performance.now()-started);total++;
- $('analyses').textContent=total;$('elapsed').textContent=elapsed+' ms';$('resultTitle').textContent=labels[result.label];
+ $('analyses').textContent=total;$('elapsed').textContent=elapsed+' ms';$('resultTitle').textContent={capped:'COM TAMPA',uncapped:'SEM TAMPA',empty:'SEM CANETA',uncertain:'NÃO FOI POSSÍVEL IDENTIFICAR'}[result.label];
+ document.querySelector('.results').dataset.state=result.label;document.querySelector('.camera').dataset.state=result.label;
  $('resultIcon').textContent={capped:'✓',uncapped:'!',empty:'○',uncertain:'?'}[result.label];
- $('resultText').textContent={capped:'A imagem se parece com os exemplos de ponta coberta. Confira visualmente para validar.',uncapped:'A imagem se parece com os exemplos de ponta exposta. Isso é uma hipótese, não uma localização da tampa.',empty:'A imagem se parece com os exemplos sem caneta.',uncertain:'Os exemplos não permitem uma separação clara. Melhore o enquadramento ou acrescente exemplos variados.'}[result.label];
+ $('resultText').textContent={capped:'Normal: a caneta parece estar com a tampa.',uncapped:'Atenção: a caneta parece estar sem a tampa.',empty:'A imagem parece não ter uma caneta.',uncertain:'Tente outra posição ou melhore os exemplos.'}[result.label];
  const scores=$('scores');scores.replaceChildren();scores.hidden=false;
  for(const label of core.CLASSES){const row=document.createElement('div');row.className='score-row';const line=document.createElement('div');line.className='score-label';const name=document.createElement('span'),value=document.createElement('span');name.textContent=labels[label];value.textContent=Math.round(result.scores[label]*100)+'%';line.append(name,value);const bar=document.createElement('div');bar.className='score-bar';const fill=document.createElement('span');fill.style.width=(result.scores[label]*100)+'%';bar.append(fill);row.append(line,bar);scores.append(row);}
  const note=document.createElement('p');note.className='smallnote no-pad';note.textContent='Concordância dos 5 exemplos mais próximos; não é probabilidade de acerto.';scores.append(note);

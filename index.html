@@ -1,20 +1,72 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#08111f"><meta name="description" content="VisionCheck: projeto escolar de classificação de caneta com ou sem tampa pela câmera do celular."><title>VisionCheck · Laboratório de inspeção</title><link rel="stylesheet" href="style.css"></head>
-<body><a class="skip" href="#laboratorio">Ir para o laboratório</a>
-<header><div class="container nav"><a class="brand" href="#inicio"><span class="brandmark" aria-hidden="true">◎</span><span>VISION<b>CHECK</b></span></a><nav aria-label="Navegação"><a href="#laboratorio">Laboratório</a><a href="#treino">Amostras</a><a href="#como">Como funciona</a></nav></div></header>
-<main><section class="hero" id="inicio"><div class="container hero-grid"><div><p class="eyebrow">VISÃO COMPUTACIONAL · PROJETO ESCOLAR</p><h1>Uma caneta.<br>Um detalhe.<br><em>Um novo olhar.</em></h1><p class="lead">Ensine o navegador a comparar imagens de uma caneta com e sem tampa. Depois, teste pela câmera ou envie uma foto.</p><div class="actions"><a class="btn primary" href="#laboratorio">Começar inspeção <span aria-hidden="true">↘</span></a><a class="btn secondary" href="#como">Entender o experimento</a></div><p class="smallnote hero-note">Protótipo experimental. Requer exemplos e validação; não é um detector industrial.</p></div><div class="hero-card" aria-hidden="true"><div class="eyebrow">OBJETO 01 / BIC CRISTAL</div><svg viewBox="0 0 420 240"><g transform="translate(35 140) rotate(-16)"><path d="M20-18H292L310 0 292 18H20Z" fill="#bad8e431" stroke="#bad8e4" stroke-width="2"/><path d="M65 0H282" stroke="#273c52" stroke-width="5"/><path d="M292-10 325 0 292 10Z" fill="#d6ba86"/><path d="m319-3 10 3-10 3" fill="#b8c3ce"/><path d="M20-18H72V18H20Q5 0 20-18Z" fill="#6388e9"/><path d="M22-18 80-23 115-17" fill="none" stroke="#819ff5" stroke-width="4"/></g><rect x="18" y="89" width="107" height="82" rx="8" fill="none" stroke="#4ad9eb" stroke-dasharray="6 5"/><text x="23" y="79" fill="#4ad9eb" font-size="12" font-family="system-ui">REGIÃO DE INTERESSE</text></svg><div class="hero-card-foot"><span>CAPTURAR → ENSINAR → COMPARAR</span><span>01 / 03</span></div></div></div></section>
-<section id="laboratorio"><div class="container"><div class="section-head"><div><p class="eyebrow">01 / LABORATÓRIO</p><h2>A câmera é o ponto de partida.</h2><p>Use a mesma caneta, deixe a ponta visível e mantenha um fundo simples. A tampa precisa cobrir a ponta para contar como “com tampa”.</p></div><span class="pill" id="modelStatus" role="status">IA ainda não carregada</span></div>
-<div class="monitor-grid"><div class="panel"><div class="panel-head"><strong>ENTRADA DE IMAGEM</strong><span id="sourceStatus" class="muted">Câmera desligada</span></div><div class="camera"><div id="placeholder"><span aria-hidden="true">◎</span><h3>Seu laboratório, no celular.</h3><p>Abra a câmera ou envie uma imagem para começar.</p></div><video id="video" autoplay playsinline muted hidden aria-label="Imagem ao vivo da câmera"></video><canvas id="capture" width="320" height="320" hidden aria-label="Fotografia utilizada na análise"></canvas><div class="camera-hint">Enquadre a caneta inteira · ponta visível</div></div><div class="controls"><button class="btn primary" id="startCamera">Abrir câmera</button><button class="btn secondary" id="switchCamera" disabled>Trocar câmera</button><button class="btn secondary" id="stopCamera" disabled>Desligar</button><label class="btn secondary upload" for="photo">Enviar foto<input id="photo" type="file" accept="image/*"></label></div><p class="smallnote">HTTPS e permissão são necessários para a câmera. Enviar foto é uma alternativa. As imagens são processadas neste navegador.</p></div>
-<aside class="panel results"><div class="panel-head"><strong>RESULTADO EXPERIMENTAL</strong></div><div class="result-body" aria-live="polite"><span class="result-icon" id="resultIcon" aria-hidden="true">↗</span><h3 id="resultTitle">Vamos preparar o teste?</h3><p id="resultText">Adicione exemplos das três classes antes de analisar. Nenhum resultado é sorteado ou simulado.</p><div id="scores" hidden></div><button class="btn primary wide" id="analyze" disabled>Analisar imagem</button><p class="smallnote" id="trainingStatus">0 / 3 classes prontas</p></div><div class="session-metrics"><div><strong id="analyses">0</strong><span>Análises na sessão</span></div><div><strong id="elapsed">—</strong><span>Tempo medido</span></div></div></aside></div>
-<div id="notice" class="notice" role="status">Comece abrindo a câmera ou enviando uma foto.</div></div></section>
-<section class="training-section" id="treino"><div class="container"><div class="section-head"><div><p class="eyebrow">02 / ENSINE COM EXEMPLOS</p><h2>O que o sistema precisa aprender.</h2><p>Selecione a classe correta e capture pelo menos <strong>8 imagens diferentes de cada classe</strong>. Isso libera o experimento, mas não garante acerto. Varie posição e luz; mantenha condições parecidas entre as classes.</p></div></div><div class="class-grid">
-<label class="class-card"><input type="radio" name="class" value="capped" checked><span class="class-number">01</span><strong>Caneta com tampa</strong><p>Tampa encaixada e cobrindo a ponta.</p><span class="class-count" id="count-capped">0 / 8 exemplos</span></label>
-<label class="class-card"><input type="radio" name="class" value="uncapped"><span class="class-number">02</span><strong>Caneta sem tampa</strong><p>Ponta exposta, mesmo se a tampa estiver ao lado ou atrás.</p><span class="class-count" id="count-uncapped">0 / 8 exemplos</span></label>
-<label class="class-card"><input type="radio" name="class" value="empty"><span class="class-number">03</span><strong>Sem caneta</strong><p>Fundo vazio e outros objetos que não são a caneta.</p><span class="class-count" id="count-empty">0 / 8 exemplos</span></label></div>
-<div class="training-actions"><button class="btn primary" id="addSample" disabled>Capturar exemplo da classe selecionada</button><label class="btn secondary upload" for="sampleFiles">Adicionar fotos à classe<input id="sampleFiles" type="file" accept="image/*" multiple></label><button class="btn secondary" id="undoSample" disabled>Desfazer última amostra</button></div>
-<div class="model-tools"><span id="sampleTotal">0 exemplos no total</span><button class="text-button" id="exportModel" disabled>Exportar treinamento</button><label class="text-button upload" for="importModel">Importar treinamento<input id="importModel" type="file" accept=".json,application/json"></label><button class="text-button danger" id="clearModel">Apagar treinamento</button></div><p class="smallnote no-pad">O treinamento fica na memória desta aba. Exporte o arquivo para guardar ou usar em outro celular. O arquivo guarda características numéricas das imagens; não guarde imagens ou dados pessoais como amostras.</p>
-<details class="references"><summary>Fotos de referência do projeto</summary><p>Estas duas fotos não entram automaticamente no treinamento. Uma foto isolada não representa todas as condições da câmera.</p><div><img src="caneta1.jpg" alt="Primeira fotografia de caneta fornecida pela equipe" loading="lazy"><img src="caneta2.jpg" alt="Segunda fotografia de caneta fornecida pela equipe" loading="lazy"></div></details></div></section>
-<section id="como"><div class="container"><div class="section-head"><div><p class="eyebrow">03 / ENTENDA A IDEIA</p><h2>De uma imagem a uma hipótese.</h2></div></div><div class="how-grid"><article><span>01</span><h3>Capturar</h3><p>A câmera ou o arquivo fornece uma imagem real. O sistema utiliza o mesmo enquadramento para exemplos e testes.</p></article><article><span>02</span><h3>Aprender exemplos</h3><p>O MobileNet extrai características visuais. Guardamos os exemplos de cada classe para comparar novas imagens.</p></article><article><span>03</span><h3>Comparar</h3><p>A nova imagem é comparada com exemplos próximos. O resultado pode ser “com tampa”, “sem tampa”, “sem caneta” ou “inconclusivo”.</p></article></div><div class="limits"><strong>Um experimento honesto tem limites.</strong><p>O sistema classifica a imagem inteira: ele não localiza a tampa nem prova ausência de uma peça. Pode confundir fundos, cores e objetos. A pontuação mostra semelhança entre exemplos, não precisão medida. Teste com fotos novas, que não entraram no treinamento, e anote os erros.</p></div></div></section>
-<section id="historico" class="history-section"><div class="container"><div class="section-head"><div><p class="eyebrow">04 / REGISTROS DA SESSÃO</p><h2>O que foi observado.</h2><p>Somente análises realizadas nesta aba. Nenhuma foto é guardada no histórico.</p></div><button class="btn secondary" id="clearHistory">Limpar registros</button></div><div class="panel table-scroll"><table><thead><tr><th scope="col">Horário</th><th scope="col">Hipótese</th><th scope="col">Concordância</th><th scope="col">Tempo</th></tr></thead><tbody id="history"><tr><td colspan="4">Nenhuma análise realizada.</td></tr></tbody></table></div></div></section>
-</main><footer><div class="container"><span><b>VISIONCHECK</b> · Projeto escolar</span><span>Câmera real · Classificação experimental · by Miguel</span></div></footer>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js" defer></script><script src="classifier-core.js" defer></script><script src="app.js" defer></script></body></html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f4f6f8">
+<title>Detector de tampa · VisionCheck</title>
+<link rel="stylesheet" href="style.css?v=simples-2">
+</head>
+<body>
+<header><h1>Detector de tampa</h1><p>Projeto escolar · Caneta BIC</p></header>
+<main>
+<p class="intro">Mostre a caneta inteira, com a ponta visível, e clique em analisar.</p>
+<section class="workspace" aria-label="Câmera e resultado">
+<div class="panel">
+<div class="panel-head"><strong>Imagem</strong><span id="sourceStatus">Câmera desligada</span></div>
+<div class="camera">
+<div id="placeholder"><p>Abra a câmera ou envie uma foto.</p></div>
+<video id="video" autoplay playsinline muted hidden aria-label="Câmera ao vivo"></video>
+<canvas id="capture" width="320" height="320" hidden aria-label="Foto para análise"></canvas>
+</div>
+<div class="controls">
+<button id="startCamera" class="btn primary">Abrir câmera</button>
+<label class="btn upload" for="photo">Enviar foto<input id="photo" type="file" accept="image/*"></label>
+<button id="switchCamera" class="btn" disabled>Trocar câmera</button>
+<button id="stopCamera" class="btn" disabled>Desligar</button>
+</div>
+</div>
+<aside class="panel results" aria-label="Resultado">
+<div class="result-body" aria-live="polite">
+<span id="resultIcon" class="result-icon" aria-hidden="true">?</span>
+<h2 id="resultTitle">Aguardando análise</h2>
+<p id="resultText">Prepare os exemplos abaixo antes do primeiro teste.</p>
+<button class="btn primary wide" id="analyze" disabled>Analisar imagem</button>
+<p id="trainingStatus" class="smallnote">0 / 3 classes prontas</p>
+<details class="score-details"><summary>Detalhes da análise</summary><div id="scores" hidden></div></details>
+</div>
+</aside>
+</section>
+<div id="notice" class="notice" role="status">Comece abrindo a câmera ou enviando uma foto.</div>
+<p class="legend"><span class="green-dot" aria-hidden="true"></span> Com tampa = verde <span class="red-dot" aria-hidden="true"></span> Sem tampa = vermelho</p>
+<details class="setup" id="treino">
+<summary>Preparar o detector <small>Abra antes do primeiro uso</small></summary>
+<div class="setup-content">
+<p>Selecione uma opção e capture pelo menos <strong>8 fotos diferentes de cada situação</strong>. Varie um pouco a posição. A tampa deve cobrir a ponta para contar como “com tampa”.</p>
+<div class="class-grid">
+<label class="class-card"><input type="radio" name="class" value="capped" checked><strong>Com tampa</strong><span id="count-capped" class="class-count">0 / 8 exemplos</span></label>
+<label class="class-card"><input type="radio" name="class" value="uncapped"><strong>Sem tampa</strong><span id="count-uncapped" class="class-count">0 / 8 exemplos</span></label>
+<label class="class-card"><input type="radio" name="class" value="empty"><strong>Sem caneta</strong><span id="count-empty" class="class-count">0 / 8 exemplos</span></label>
+</div>
+<div class="controls">
+<button class="btn primary" id="addSample" disabled>Capturar exemplo</button>
+<label class="btn upload" for="sampleFiles">Usar fotos<input id="sampleFiles" type="file" accept="image/*" multiple></label>
+<button class="btn" id="undoSample" disabled>Desfazer</button>
+</div>
+<div class="model-tools"><span id="sampleTotal">0 exemplos no total</span><span id="modelStatus" role="status">IA ainda não carregada</span></div>
+<div class="controls"><button class="btn" id="exportModel" disabled>Salvar treinamento</button><label class="btn upload" for="importModel">Carregar treinamento<input id="importModel" type="file" accept=".json,application/json"></label><button class="btn danger" id="clearModel">Apagar treinamento</button></div>
+<p class="smallnote">O treinamento fica nesta aba. Salve o arquivo para usar depois. Os exemplos são processados no navegador; a primeira carga da IA precisa de internet.</p>
+</div>
+</details>
+<details class="history">
+<summary>Histórico <span class="smallnote"><b id="analyses">0</b> análises · <span id="elapsed">—</span></span></summary>
+<div class="controls"><button class="btn" id="clearHistory">Limpar registros</button></div>
+<div class="table-scroll"><table><thead><tr><th>Horário</th><th>Resultado</th><th>Concordância</th><th>Tempo</th></tr></thead><tbody id="history"><tr><td colspan="4">Nenhuma análise realizada.</td></tr></tbody></table></div>
+</details>
+<p class="footnote">Experimento escolar: pode errar. Teste com fotos novas. Sem caneta ou resultado inconclusivo não ficam verdes. Se a câmera não abrir, permita o acesso ou envie uma foto.</p>
+</main>
+<footer>VisionCheck · Projeto escolar</footer>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js" defer></script>
+<script src="classifier-core.js" defer></script><script src="app.js?v=simples-2" defer></script>
+</body>
+</html>
