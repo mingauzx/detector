@@ -22,12 +22,12 @@ function addExample(data,label,vector){
 }
 function classify(data,vector){
  if(!ready(data))throw Error('Capture pelo menos 8 exemplos de cada classe antes de analisar.');
- const query=normalize(vector),neighbors=CLASSES.flatMap(label=>data[label].map(v=>({label,similarity:dot(v,query)}))).sort((a,b)=>b.similarity-a.similarity).slice(0,5);
+ const query=normalize(vector),ordered=CLASSES.flatMap(label=>data[label].map(v=>({label,similarity:dot(v,query)}))).sort((a,b)=>b.similarity-a.similarity),neighbors=ordered.slice(0,5);
  const counts=Object.fromEntries(CLASSES.map(c=>[c,0]));
  for(const item of neighbors)counts[item.label]++;
  const scores=Object.fromEntries(CLASSES.map(c=>[c,counts[c]/neighbors.length]));
  const ranking=CLASSES.map(label=>({label,score:scores[label]})).sort((a,b)=>b.score-a.score);
- const top=ranking[0],inconclusive=top.score<.8||top.score-ranking[1].score<.3||neighbors[0].similarity<.7;
+ const top=ranking[0],boundaryTie=ordered.slice(5).some(n=>n.label!==top.label&&n.similarity>=neighbors[4].similarity-1e-6),inconclusive=boundaryTie||top.score<.8||top.score-ranking[1].score<.3||neighbors[0].similarity<.7;
  return {label:inconclusive?'uncertain':top.label,scores,agreement:top.score,similarity:neighbors[0].similarity};
 }
 function serialize(data){return JSON.stringify({version:1,model:MODEL_ID,samples:data});}
