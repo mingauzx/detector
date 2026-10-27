@@ -16,3 +16,5 @@ test('mínimo reduzido exige três amostras de cada classe',()=>{
  for(let k=0;k<3;k++)c.addExample(d,c.CLASSES[k],vector(k,2));
  assert.equal(c.MIN_SAMPLES,3);assert.equal(c.ready(d),true);
 });
+
+test('classifica com somente três exemplos por classe',()=>{const d=c.createDataset();for(let k=0;k<3;k++)for(let i=0;i<3;i++)c.addExample(d,c.CLASSES[k],vector(k,i));for(let k=0;k<3;k++){const result=c.classify(d,vector(k,9));assert.equal(result.label,c.CLASSES[k]);assert.equal(result.neighborCount,3);}});
