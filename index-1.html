@@ -22,6 +22,18 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--muted);font-s
 [hidden]{display:none!important}.workspace{display:grid;grid-template-columns:80px minmax(0,1.3fr) minmax(0,1fr);gap:16px}.workspace>*{min-width:0}.marker-art{align-self:center;text-align:center;font-size:11px;color:var(--muted)}.marker-art svg{width:100%;max-height:320px}.camera{aspect-ratio:1;min-height:0;padding:0;border:4px solid transparent}.camera video,.camera canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}#placeholder{text-align:center;padding:20px;color:var(--muted)}.upload{position:relative;display:inline-flex;align-items:center;overflow:hidden;cursor:pointer}.upload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}.result-body{padding:22px;text-align:center}.result-icon{font-size:36px;font-weight:bold}.wide{width:100%;margin:14px 0}.notice{padding:14px;margin-top:16px;border:1px solid var(--line);border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere}.notice.error{color:var(--red);border-color:var(--red)}.legend{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}.green-dot,.red-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--green)}.red-dot{background:var(--red);margin-left:12px}.results[data-state="capped"],.camera[data-state="capped"]{border:3px solid var(--green);background:#12332c}.results[data-state="uncapped"],.camera[data-state="uncapped"]{border:3px solid var(--red);background:#321f2b}.results[data-state="capped"] h2{color:var(--green)}.results[data-state="uncapped"] h2{color:var(--red)}.setup,.history{margin-top:18px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}summary{padding:16px;cursor:pointer;font-weight:bold}summary small{font-weight:normal;color:var(--muted)}.setup-content{padding:0 18px 18px}.class-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.class-card{padding:14px;border:1px solid var(--line);border-radius:10px;cursor:pointer}.class-card strong,.class-count{display:block;font-size:13px}.class-count{color:var(--muted)}.class-count.ready{color:var(--green)}.class-card:has(input:checked){border-color:var(--cyan);background:#123044}.model-tools{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted)}.score-details{font-size:12px}.score-label{display:flex;justify-content:space-between}.score-bar{height:5px;background:var(--line);margin:6px 0 12px}.score-bar span{display:block;height:100%;background:var(--cyan)}.footnote,.intro{color:var(--muted)}.footnote{font-size:12px}tr[data-state="capped"] td:nth-child(2){color:var(--green)}tr[data-state="uncapped"] td:nth-child(2){color:var(--red)}button:focus-visible,summary:focus-visible,.upload:focus-within{outline:3px solid var(--yellow);outline-offset:3px}
 @media(max-width:700px){.workspace{grid-template-columns:42px minmax(0,1fr);gap:10px}.marker-art{grid-column:1;grid-row:1}.workspace>.panel:not(.results){grid-column:2;grid-row:1}.workspace>.results{grid-column:1/-1}.class-grid{grid-template-columns:1fr}.controls .btn{flex:1 1 40%;font-size:12px;padding:10px}.marker-art svg{max-height:220px}}
 
+
+/* Overlay de orientação: não é desenhado no canvas nem usado na classificação. */
+.framing-guide{position:absolute;inset:0;z-index:2;pointer-events:none;display:grid;place-items:center}
+.framing-guide svg{width:100%;height:100%;filter:drop-shadow(0 1px 2px #000)}
+.framing-guide .guide-body{fill:#4ad9eb12;stroke:#4ad9eb;stroke-width:2;stroke-dasharray:7 5}
+.framing-guide .guide-cap{fill:#ffd07115;stroke:#ffd071;stroke-width:2;stroke-dasharray:5 4}
+.framing-guide .guide-line{fill:none;stroke:#fff;stroke-width:1.5}
+.framing-guide text{fill:white;font:bold 9px Arial,sans-serif;paint-order:stroke;stroke:#08111f;stroke-width:3px}
+.framing-controls{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:12px 16px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+.framing-controls input{width:18px;height:18px;accent-color:var(--cyan)}
+.framing-help{margin:0;padding:0 16px 14px;color:var(--muted);font-size:12px}
+
 </style>
 </head>
 <body>
@@ -39,6 +51,9 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--muted);font-s
 <div id="placeholder"><p>Abra a câmera ou envie uma foto.</p></div>
 <video id="video" autoplay playsinline muted hidden aria-label="Câmera ao vivo"></video>
 <canvas id="capture" width="320" height="320" hidden aria-label="Foto para análise"></canvas>
+<div id="framingGuide" class="framing-guide" hidden aria-hidden="true">
+<svg viewBox="0 0 320 320" preserveAspectRatio="xMidYMid meet"><path class="guide-body" d="M141 95h38v164q0 10-10 10h-18q-10 0-10-10Z"/><rect class="guide-cap" x="137" y="42" width="46" height="64" rx="9"/><path class="guide-line" d="M160 27v-12m0 269v14M125 74H84m111 0h41"/><text x="78" y="68" text-anchor="middle">TAMPA</text><text x="160" y="310" text-anchor="middle">ALINHE O CORPO AQUI</text></svg>
+</div>
 </div>
 <div class="controls">
 <button id="startCamera" class="btn primary">Abrir câmera</button>
@@ -46,6 +61,7 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--muted);font-s
 <button id="switchCamera" class="btn" disabled>Trocar câmera</button>
 <button id="stopCamera" class="btn" disabled>Desligar</button>
 </div>
+<label class="framing-controls"><input id="showGuide" type="checkbox" checked> Mostrar guia de posição na câmera</label><p class="framing-help">Apoie o celular apontando para uma folha branca. Posicione o canetão na vertical, com a ponta para cima, e alinhe o corpo ao contorno azul. A região amarela indica a tampa; deixe-a vazia no teste sem tampa. Mantenha distância e luz iguais nos exemplos e no teste. A guia não detecta nem ajusta a posição automaticamente.</p>
 </div>
 <aside class="panel results" aria-label="Resultado">
 <div class="result-body" aria-live="polite">
@@ -99,5 +115,5 @@ document.querySelectorAll('.step').forEach(b=>b.onclick=()=>{step=Number(b.datas
 })();</script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js" defer></script>
-<script src="classifier-core.js?v=known-2" defer></script><script src="app.js?v=videos-1" defer></script>
+<script src="classifier-core.js?v=known-2" defer></script><script src="app.js?v=framing-1" defer></script>
 </body></html>
